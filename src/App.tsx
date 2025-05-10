@@ -1,31 +1,35 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import './App.css';
+import FeedbackPage from './pages/Feedback'; // Assuming your FeedbackPage component is in src/pages/Feedback.tsx
+import ClientAdminPage from './pages/ClientAdmin'; // Import the new ClientAdminPage
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import ThankYou from "./pages/ThankYou";
-import Feedback from "./pages/Feedback";
-import NotFound from "./pages/NotFound";
+function App() {
+  return (
+    <Router>
+      <div>
+        <nav>
+          <ul>
+            <li>
+              <Link to="/">Home (Feedback)</Link>
+            </li>
+            <li>
+              <Link to="/admin">Client Admin</Link>
+            </li>
+          </ul>
+        </nav>
 
-const queryClient = new QueryClient();
+        <hr />
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/feedback" element={<Feedback />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/" element={<FeedbackPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/admin" element={<ClientAdminPage />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </div>
+    </Router>
+  );
+}
 
 export default App;
+
