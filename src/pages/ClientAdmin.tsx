@@ -86,35 +86,29 @@ const ClientAdminPage: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newClient, setNewClient] = useState<NewClientData>(initialNewClientData);
 
-  // Mock data for now
   useEffect(() => {
-    setIsLoading(true);
-    // const fetchClients = async () => {
-    //   try {
-    //     // Replace with actual API call: GET /admin/clients?search={searchTerm}&isActive={filterActive}
-    //     // const response = await fetch(`/api/admin/clients?search=${searchTerm}&isActive=${filterActive === 'all' ? '' : filterActive === 'active'}`);
-    //     // if (!response.ok) throw new Error('Failed to fetch clients');
-    //     // const data = await response.json();
-    //     // setClients(data.clients);
-    //     setClients([
-    //       { clientID: '1', clientName: 'Test Client A', isActive: true, googleReviewUrl: 'http://google.com/a', notificationEmail: 'a@test.com', logoUrl: 'logo_a.png', createdAt: new Date().toISOString()},
-    //       { clientID: '2', clientName: 'Test Client B', isActive: false, googleReviewUrl: 'http://google.com/b', notificationEmail: 'b@test.com', logoUrl: 'logo_b.png', createdAt: new Date().toISOString()},
-    //     ]);
-    //   } catch (err) {
-    //     setError(err instanceof Error ? err.message : 'An unknown error occurred');
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-    // fetchClients();
-    setTimeout(() => {
-        setClients([
-             { clientID: '1', clientName: 'Mock Client Alpha', isActive: true, googleReviewUrl: 'http://google.com/a', notificationEmail: 'a@test.com', logoUrl: 'logo_a.png', createdAt: new Date().toISOString()},
-             { clientID: '2', clientName: 'Mock Client Beta (Inactive)', isActive: false, googleReviewUrl: 'http://google.com/b', notificationEmail: 'b@test.com', logoUrl: 'logo_b.png', createdAt: new Date().toISOString()},
-             { clientID: '3', clientName: 'Another Active Client', isActive: true, googleReviewUrl: 'http://google.com/c', notificationEmail: 'c@test.com', logoUrl: 'logo_c.png', createdAt: new Date().toISOString()},
-        ]);
+    const fetchClients = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        if (filterActive !== 'all') params.append('isActive', filterActive === 'active' ? 'true' : 'false');
+        
+        const response = await fetch(`https://bw4agz6xn4.execute-api.ap-southeast-2.amazonaws.com/prod/admin/clients?${params.toString()}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Failed to fetch clients and parse error JSON' }));
+          throw new Error(errorData.message || 'Failed to fetch clients');
+        }
+        const data = await response.json();
+        setClients(data.clients || []); // Ensure clients is always an array
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching clients');
+      } finally {
         setIsLoading(false);
-    }, 1000);
+      }
+    };
+    fetchClients();
   }, [searchTerm, filterActive]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -163,24 +157,21 @@ const ClientAdminPage: React.FC = () => {
         formData.append('logoFile', newClient.logoFile);
       }
 
-      // Replace with actual API call: POST /admin/clients
-      // const response = await fetch('/api/admin/clients', {
-      //   method: 'POST',
-      //   body: formData, // FormData will set Content-Type to multipart/form-data
-      // });
-      // if (!response.ok) {
-      //   const errorData = await response.json();
-      //   throw new Error(errorData.message || 'Failed to create client');
-      // }
-      // const createdClient = await response.json();
-      // setClients(prev => [...prev, createdClient.clientData]); // Assuming API returns the new client
-      console.log("Submitting:", Object.fromEntries(formData.entries()));
-      alert('Client creation submitted (mock)! Check console.');
+      const response = await fetch('https://bw4agz6xn4.execute-api.ap-southeast-2.amazonaws.com/prod/admin/clients', {
+        method: 'POST',
+        body: formData, 
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create client and parse error JSON' }));
+        throw new Error(errorData.message || 'Failed to create client');
+      }
+      const createdClient = await response.json();
+      setClients(prev => [...prev, createdClient.clientData]); 
       setShowCreateForm(false);
       setNewClient(initialNewClientData);
-      // Optionally re-fetch clients list
+      // Optionally re-fetch clients list by updating a trigger state for useEffect
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setError(err instanceof Error ? err.message : 'An unknown error occurred during client creation');
     } finally {
       setIsLoading(false);
     }
@@ -223,8 +214,8 @@ const ClientAdminPage: React.FC = () => {
           </div>
 
           {isLoading && <p>Loading clients...</p>}
-          {!isLoading && filteredClients.length === 0 && <p>No clients found.</p>}
-          {!isLoading && filteredClients.length > 0 && (
+          {!isLoading && !error && filteredClients.length === 0 && <p>No clients found.</p>}
+          {!isLoading && !error && filteredClients.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredClients.map(client => (
                 <Card key={client.clientID}>
